@@ -22,15 +22,24 @@ This project provides a backend foundation for an online store, including **prod
 
 ```bash
 ecommerce-api-fastapi/
-├── app/
-│   ├── main.py          # Entry point
-│   ├── core/            # Config, settings
-│   ├── auth/            # JWT, user auth
-│   ├── products/        # Product & category routes
-│   ├── cart/            # Cart endpoints
-│   ├── orders/          # Order endpoints
-│   ├── payments/        # Payment integration
-│   └── models/          # SQLAlchemy models
-├── tests/               # Unit & integration tests
+├── README.md
+├── __init__.py
+├── api
+│   ├── __init__.py
+│   └── v1
+│       ├── __init__.py
+│       ├── models
+│       │   └── __init__.py
+│       ├── routes
+│       │   └── __init__.py
+│       ├── schemas
+│       │   └── __init__.py
+│       ├── services
+│       │   └── __init__.py
+│       └── utils
+│           └── __init__.py
+├── app.py
 ├── requirements.txt
-└── README.md
+└── utils
+    ├── __init__.py
+    └── dependencies.py
