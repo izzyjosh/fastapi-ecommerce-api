@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     port: int = 50
     cloud_name: str = "djkoksh"
     cloudinary_url: str = "CLOUDINARY_URL=cloudinary://<your_api_key>:<your_api_secret>@dqfmn9zdt"
+    algorithm: str = "Sh555"
+    access_token_expire_minutes: int = 567
 
     model_config = SettingsConfigDict(env_file=".env")
 
