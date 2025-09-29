@@ -15,8 +15,8 @@ class User(AbstractBase):
 
     __tablename__: str = "users"
 
-    username: Mapped[str] = mapped_column(String(50))
-    email: Mapped[str] = mapped_column(String(225))
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(225), unique=True, index=True)
     profile_pic: Mapped[Optional[str]] = mapped_column(String(225))
     verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
