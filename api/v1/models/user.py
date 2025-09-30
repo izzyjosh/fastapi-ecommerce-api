@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 import enum
 from sqlalchemy import Boolean, DateTime, Enum, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from api.v1.models.abstract_base import AbstractBase
 
 class RoleEnum(enum.Enum):
@@ -23,6 +23,8 @@ class User(AbstractBase):
     role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum), name="role_enum", default=RoleEnum.customer)
     password: Mapped[str] = mapped_column(String(225))
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+    access_tokens: Mapped[list] = relationship("AccessToken", back_populates="user")
 
 
     def __repr__(self) -> str:
