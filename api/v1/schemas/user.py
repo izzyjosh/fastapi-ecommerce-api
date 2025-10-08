@@ -32,3 +32,6 @@ class UserResponseModel(BaseModel):
 class LoginSchema(BaseModel):
     email: str
     password: str
+
+class UpdateRole(BaseModel):
+    role: Literal["customer", "admin", "seller"]

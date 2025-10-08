@@ -17,8 +17,8 @@ import jwt
 from sqlalchemy.util import deprecated_params
 # Internal
 from api.v1.models import access_token
-from api.v1.schemas.user import UserCreateSchema
-from api.v1.models.user import User
+from api.v1.schemas.user import UserCreateSchema, UpdateRole
+from api.v1.models.user import RoleEnum, User
 from api.v1.models.access_token import AccessToken
 from api.v1.utils.dependencies import get_db
 from utils.config import settings
@@ -142,6 +142,7 @@ class UserService:
         db.commit()
         db.refresh(access_token)
 
+    # Deoendencies
     def get_current_user(self, db: Annotated[Session, Depends(get_db)], token: Annotated[str, Depends(oauth2_scheme)]):
 
         credential_exception = HTTPException(
@@ -154,6 +155,7 @@ class UserService:
             payload = jwt.decode(token, settings.secret, algorithms=[settings.algorithm])
 
             email: str = payload.get("email")
+            role: str = payload.get("role")
 
             if not email:
                 raise credential_exception
@@ -175,5 +177,26 @@ class UserService:
 
 
 
+    def update_role(self, user_id: UUID, role: UpdateRole, db: Session) -> User:
+        user = db.scalars(select(User).where(User.id == user_id)).first()
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
+
+        user.role = RoleEnum(role)
+
+        db.commit()
+        db.refresh(user)
+
+        return user
+
+
 
 user_service = UserService()
+
+async def admin_required(current_user: Annotated[User, Depends(user_service.get_current_user)]) -> User:
+
+    if current_user.role.value != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admins only")
+
+    return current_user
