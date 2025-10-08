@@ -1,23 +1,29 @@
 # Python
 from datetime import datetime, timedelta, timezone
 from os import access
+from typing import Annotated, Any
 
 # External
-from fastapi import status
+from fastapi import Depends, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pwdlib import PasswordHash
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 import jwt
+from sqlalchemy.util import deprecated_params
 # Internal
+from api.v1.models import access_token
 from api.v1.schemas.user import UserCreateSchema
 from api.v1.models.user import User
 from api.v1.models.access_token import AccessToken
+from api.v1.utils.dependencies import get_db
 from utils.config import settings
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 class UserService:
 
@@ -100,7 +106,7 @@ class UserService:
 
 
     def generate_access_token(self, db: Session, user: User):
-        payload = {
+        payload: dict[str, Any]= {
                 "email": user.email,
                 "role": user.role.value,
                 "username": user.username
@@ -124,6 +130,50 @@ class UserService:
 
     def hash_password(self, password: str) -> str:
         return self.password_hasher.hash(password)
+
+    def blacklist_token(self, db: Session, user: User): 
+        stmt = select(AccessToken).where(AccessToken.user_id == user.id)
+        access_token = db.scalars(stmt).first()
+
+        if not access_token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="already logged out")
+        access_token.blacklisted = True
+
+        db.commit()
+        db.refresh(access_token)
+
+    def get_current_user(self, db: Annotated[Session, Depends(get_db)], token: Annotated[str, Depends(oauth2_scheme)]):
+
+        credential_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        try:
+            payload = jwt.decode(token, settings.secret, algorithms=[settings.algorithm])
+
+            email: str = payload.get("email")
+
+            if not email:
+                raise credential_exception
+
+        except jwt.InvalidTokenError:
+            raise credential_exception
+
+        access_token = db.scalars(select(AccessToken).where(AccessToken.token == token)).first()
+
+        if access_token and access_token.blacklisted:
+            raise credential_exception
+
+        user = self.get_user_by_email(db=db, email=email)
+
+        if not user:
+            raise credential_exception
+
+        return user
+
+
 
 
 user_service = UserService()
